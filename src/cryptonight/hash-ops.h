@@ -30,6 +30,8 @@
 
 #pragma once
 
+#define NO_AES=1
+
 #if !defined(__cplusplus)
 
 #include <assert.h>
