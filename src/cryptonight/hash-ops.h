@@ -78,6 +78,9 @@ enum {
   HASH_DATA_AREA = 136
 };
 
+#ifdef __cplusplus
+extern "C"{
+#endif
 void cn_fast_hash(const void *data, size_t length, char *hash);
 void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int prehashed, uint64_t height);
 
@@ -85,5 +88,9 @@ void hash_extra_blake(const void *data, size_t length, char *hash);
 void hash_extra_groestl(const void *data, size_t length, char *hash);
 void hash_extra_jh(const void *data, size_t length, char *hash);
 void hash_extra_skein(const void *data, size_t length, char *hash);
-
+  
 void tree_hash(const char (*hashes)[HASH_SIZE], size_t count, char *root_hash);
+#ifdef __cplusplus
+}
+#endif
+
