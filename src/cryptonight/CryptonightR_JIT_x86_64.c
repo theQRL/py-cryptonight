@@ -1,3 +1,4 @@
+#include <stdint.h>
 //
 // Generated with DUMP_JIT on x86_64, OSX, LLVM
 //
