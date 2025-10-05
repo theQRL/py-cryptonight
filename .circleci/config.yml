@@ -126,7 +126,7 @@ jobs:
       - run: git submodule update --init --recursive
       - run: pip3 install pytest pytest-cov
       - run: pip3 install -e .
-      - run: python3 -m pytest --cov=pycryptonight pycryptonight/tests/
+      - run: python3 -m pytest --cov=pycryptonight pycryptonight/tests/test.py -v
 
   # Deploy to PyPI (following qrandomx pattern)
   deploy-pypi:
