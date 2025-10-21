@@ -476,11 +476,12 @@ static void oaes_get_seed( char buf[RANDSIZ + 1] )
 {
         #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__)
 	struct timeb timer;
+	struct tm gmTimer_buf;
 	struct tm *gmTimer;
 	char * _test = NULL;
 	
 	ftime (&timer);
-	gmTimer = gmtime( &timer.time );
+	gmTimer = gmtime_r( &timer.time, &gmTimer_buf );
 	_test = (char *) calloc( sizeof( char ), timer.millitm );
 	sprintf( buf, "%04d%02d%02d%02d%02d%02d%03d%p%d",
 		gmTimer->tm_year + 1900, gmTimer->tm_mon + 1, gmTimer->tm_mday,
@@ -488,11 +489,12 @@ static void oaes_get_seed( char buf[RANDSIZ + 1] )
 		_test + timer.millitm, GETPID() );
 	#else
 	struct timeval timer;
+	struct tm gmTimer_buf;
 	struct tm *gmTimer;
 	char * _test = NULL;
 	
 	gettimeofday(&timer, NULL);
-	gmTimer = gmtime( &timer.tv_sec );
+	gmTimer = gmtime_r( &timer.tv_sec, &gmTimer_buf );
 	_test = (char *) calloc( sizeof( char ), timer.tv_usec/1000 );
 	sprintf( buf, "%04d%02d%02d%02d%02d%02d%03d%p%d",
 		gmTimer->tm_year + 1900, gmTimer->tm_mon + 1, gmTimer->tm_mday,
@@ -508,24 +510,26 @@ static uint32_t oaes_get_seed(void)
 {
         #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__)
 	struct timeb timer;
+	struct tm gmTimer_buf;
 	struct tm *gmTimer;
 	char * _test = NULL;
 	uint32_t _ret = 0;
 	
 	ftime (&timer);
-	gmTimer = gmtime( &timer.time );
+	gmTimer = gmtime_r( &timer.time, &gmTimer_buf );
 	_test = (char *) calloc( sizeof( char ), timer.millitm );
 	_ret = gmTimer->tm_year + 1900 + gmTimer->tm_mon + 1 + gmTimer->tm_mday +
 			gmTimer->tm_hour + gmTimer->tm_min + gmTimer->tm_sec + timer.millitm +
 			(uintptr_t) ( _test + timer.millitm ) + GETPID();
 	#else
 	struct timeval timer;
+	struct tm gmTimer_buf;
 	struct tm *gmTimer;
 	char * _test = NULL;
 	uint32_t _ret = 0;
 	
 	gettimeofday(&timer, NULL);
-	gmTimer = gmtime( &timer.tv_sec );
+	gmTimer = gmtime_r( &timer.tv_sec, &gmTimer_buf );
 	_test = (char *) calloc( sizeof( char ), timer.tv_usec/1000 );
 	_ret = gmTimer->tm_year + 1900 + gmTimer->tm_mon + 1 + gmTimer->tm_mday +
 			gmTimer->tm_hour + gmTimer->tm_min + gmTimer->tm_sec + timer.tv_usec/1000 +

@@ -1,0 +1,194 @@
+version: 2.1
+
+# NB: When testing locally on ARM64 (aarch64) architecture, only jobs that use
+# MONERO_NO_AES=1 will work due to the -maes compiler flag being x86-specific.
+# JIT-related configurations also won't work on ARM64. The following jobs are
+# expected to work locally on ARM64: build, test_no_aes_no_jit, test_python
+# All jobs should work correctly in CircleCI's AMD64 Docker environment.
+
+jobs:
+  # Build and test with default settings
+  build:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Install package
+          command: pip3 install -e .
+      - run:
+          name: Run tests with default settings
+          command: |
+            MONERO_USE_CNV4_JIT=0 python3 -m unittest discover -s pycryptonight/tests
+            MONERO_USE_CNV4_JIT=1 python3 -m unittest discover -s pycryptonight/tests
+
+  # Test with MONERO_NO_AES=1 MONERO_NO_JIT=1
+  test_no_aes_no_jit:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Clean build and install with NO_AES=1 NO_JIT=1
+          command: |
+            rm -rf build/
+            MONERO_NO_AES=1 MONERO_NO_JIT=1 python3 setup.py develop
+      - run:
+          name: Run tests with NO_AES=1 NO_JIT=1
+          command: |
+            MONERO_USE_CNV4_JIT=0 python3 -m unittest discover -s pycryptonight/tests
+            MONERO_USE_CNV4_JIT=1 python3 -m unittest discover -s pycryptonight/tests
+
+  # Test with MONERO_NO_AES=0 MONERO_NO_JIT=1
+  # NB: When testing locally on ARM64, this job will fail due to -maes flag
+  test_aes_no_jit:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Clean build and install with NO_AES=0 NO_JIT=1
+          command: |
+            rm -rf build/
+            MONERO_NO_AES=0 MONERO_NO_JIT=1 python3 setup.py develop
+      - run:
+          name: Run tests with NO_AES=0 NO_JIT=1
+          command: |
+            MONERO_USE_CNV4_JIT=0 python3 -m unittest discover -s pycryptonight/tests
+            MONERO_USE_CNV4_JIT=1 python3 -m unittest discover -s pycryptonight/tests
+
+  # Test with MONERO_NO_AES=0 MONERO_NO_JIT=0
+  # NB: When testing locally on ARM64, this job will fail due to -maes flag
+  test_aes_jit:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Clean build and install with NO_AES=0 NO_JIT=0
+          command: |
+            rm -rf build/
+            MONERO_NO_AES=0 MONERO_NO_JIT=0 python3 setup.py develop
+      - run:
+          name: Run tests with NO_AES=0 NO_JIT=0
+          command: |
+            MONERO_USE_CNV4_JIT=0 python3 -m unittest discover -s pycryptonight/tests
+            MONERO_USE_CNV4_JIT=1 python3 -m unittest discover -s pycryptonight/tests
+
+  # Test with MONERO_NO_AES=0 MONERO_NO_JIT=0 MONERO_STATIC_JIT=0
+  # NB: When testing locally on ARM64, this job will fail due to -maes flag and JIT
+  test_dynamic_jit:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Clean build and install with dynamic JIT
+          command: |
+            rm -rf build/
+            MONERO_NO_AES=0 MONERO_NO_JIT=0 MONERO_STATIC_JIT=0 python3 setup.py develop
+      - run:
+          name: Run tests with dynamic JIT
+          command: |
+            MONERO_USE_CNV4_JIT=0 python3 -m unittest discover -s pycryptonight/tests
+            MONERO_USE_CNV4_JIT=1 python3 -m unittest discover -s pycryptonight/tests
+
+  # Test with debug JIT settings
+  # NB: When testing locally on ARM64, this job will fail due to -maes flag and JIT
+  test_debug_jit:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Clean build and install with debug JIT
+          command: |
+            rm -rf build/
+            MONERO_NO_AES=0 MONERO_NO_JIT=0 MONERO_STATIC_JIT=0 MONERO_DEBUG_JIT=1 MONERO_DUMP_JIT=1 python3 setup.py develop
+      - run:
+          name: Run tests with debug JIT
+          command: |
+            MONERO_USE_CNV4_JIT=0 python3 -m unittest discover -s pycryptonight/tests
+            MONERO_USE_CNV4_JIT=1 python3 -m unittest discover -s pycryptonight/tests
+
+  # Python package testing (following qrandomx pattern)
+  test_python:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: pip3 install pytest pytest-cov
+      - run: pip3 install -e .
+      - run: python3 -m pytest --cov=pycryptonight pycryptonight/tests/test.py -v
+
+  # Deploy to PyPI (following qrandomx pattern)
+  deploy-pypi:
+    docker:
+      - image: qrledger/qrl-docker-ci:noble
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: python3 setup.py build sdist
+      - run: pip install twine
+      - run: twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
+
+workflows:
+  version: 2
+  build_all:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+
+      - test_no_aes_no_jit:
+          filters:
+            tags:
+              only: /.*/
+
+      - test_aes_no_jit:
+          filters:
+            tags:
+              only: /.*/
+
+      - test_aes_jit:
+          filters:
+            tags:
+              only: /.*/
+
+      - test_dynamic_jit:
+          filters:
+            tags:
+              only: /.*/
+
+      - test_debug_jit:
+          filters:
+            tags:
+              only: /.*/
+
+      - test_python:
+          filters:
+            tags:
+              only: /.*/
+
+      - deploy-pypi:
+          requires:
+            - build
+            - test_no_aes_no_jit
+            - test_aes_no_jit
+            - test_aes_jit
+            - test_dynamic_jit
+            - test_debug_jit
+            - test_python
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)*/
