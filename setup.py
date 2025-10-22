@@ -1,5 +1,6 @@
 import sys
 import os
+import platform
 
 from setuptools import setup
 from setuptools import Extension
@@ -42,9 +43,11 @@ define_macros = [
 if os.name == 'nt':
     compile_args = []  # AzeS: Maybe some cl.exe args that would be interesting?
 else:
+    # Check if we're on ARM64 (Apple Silicon) where -maes is not supported
+    is_arm64 = platform.machine().lower() in ('arm64', 'aarch64')
     compile_args = [
         '-std=gnu11' if not no_gnu else '-std=c11',
-        '-maes' if not no_aes else None
+        '-maes' if (not no_aes and not is_arm64) else None
     ]
 
 libs = []
